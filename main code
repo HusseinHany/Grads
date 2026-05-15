@@ -254,9 +254,13 @@ void updateStudent() {
             cout << "\n  What to update?\n";
             cout << "  \033[33m1\033[0m. GPA\n";
             cout << "  \033[33m2\033[0m. Major\n";
-            cout << "  \033[33m3\033[0m. Both\n";
-            cout << "  Choice: ";
-            int ch; cin >> ch;
+             cout << "  \033[33m3\033[0m. Both\n";
+             cout << "  Choice: ";
+             int ch; cin >> ch;
+             if (ch < 1 || ch > 3) {
+                 cout << "\033[31m  [ERROR] Invalid update choice.\033[0m\n";
+                 return;
+             }
 
             if (ch == 1 || ch == 3) {
                 while (true) {
@@ -269,9 +273,9 @@ void updateStudent() {
                     cin.ignore(1000, '\n');
                 }
             }
-            if (ch == 2 || ch == 3) {
-                cin.ignore();
-                while (true) {
+             if (ch == 2 || ch == 3) {
+                 cin.ignore();
+                 while (true) {
                     cout << "  New Major : ";
                     getline(cin, students[i].major);
                     try {
@@ -281,15 +285,11 @@ void updateStudent() {
                     }
                     catch (const exception& e) {
                         cout << "\033[31m  [ERROR] " << e.what() << "\033[0m\n";
-                    }
-                }
-            }
-            else if (ch != 1) {
-                cout << "\033[31m  [ERROR] Invalid update choice.\033[0m\n";
-                return;
-            }
+                     }
+                 }
+             }
 
-            cout << "\033[32m  [SUCCESS] Record updated.\033[0m\n";
+             cout << "\033[32m  [SUCCESS] Record updated.\033[0m\n";
             return;
         }
     }
