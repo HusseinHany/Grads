@@ -25,7 +25,7 @@ using namespace chrono;
 // ============================================================
 
 const int MAX = 100000;
-const string MAJOR_ALLOWED_SPECIALS = " -&/.";
+const string MAJOR_ALLOWED_SPECIAL_CHARS = " -&/.";
 
 long long g_comparisons = 0;
 long long g_swaps = 0;
@@ -126,7 +126,7 @@ void validateMajorOrThrow(const string& major) {
             hasAlpha = true;
             continue;
         }
-        else if (MAJOR_ALLOWED_SPECIALS.find(c) == string::npos)
+        else if (MAJOR_ALLOWED_SPECIAL_CHARS.find(c) == string::npos)
             throw invalid_argument("Major can contain letters, spaces, '-', '&', '/', and '.' only.");
     }
 
@@ -1026,7 +1026,7 @@ void sortMenu() {
         cout << "\n  Sorting Descriptions:\n";
         cout << "  • Bubble Sort   : O(n^2), simple, stable, best for nearly sorted data.\n";
         cout << "  • Insertion Sort: O(n^2), stable, excellent for small or incremental lists.\n";
-        cout << "  • Selection Sort: O(n^2), in-place, minimizes swaps/writes.\n";
+        cout << "  • Selection Sort: O(n^2), in-place, minimizes swaps/writes, unstable.\n";
         cout << "  • Merge Sort    : O(n log n), stable, predictable on large datasets.\n";
         cout << "  • Quick Sort    : Avg O(n log n), in-place, usually fastest in practice.\n";
         return;
