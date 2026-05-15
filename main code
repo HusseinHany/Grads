@@ -15,6 +15,8 @@
 #include <cmath>
 #include <stdexcept>
 #include <cctype>
+#include <limits>
+#include <algorithm>
 using namespace std;
 using namespace chrono;
 
@@ -23,6 +25,7 @@ using namespace chrono;
 // ============================================================
 
 const int MAX = 100000;
+const string MAJOR_ALLOWED_SPECIAL_CHARS = " -&/.";
 
 long long g_comparisons = 0;
 long long g_swaps = 0;
@@ -56,7 +59,10 @@ void swapStudents(Student& a, Student& b) {
 
 void pause() {
     cout << "\n\033[2m  Press Enter to continue...\033[0m";
-    cin.ignore(1000, '\n');
+    cin.clear();
+    if (cin.rdbuf()->in_avail() > 0) {
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
     cin.get();
 }
 
@@ -82,6 +88,17 @@ string trim(const string& s) {
     return (start <= end) ? s.substr(start, end - start + 1) : "";
 }
 
+string toLowerCopy(const string& s) {
+    string out = s;
+    transform(out.begin(), out.end(), out.begin(),
+        [](unsigned char c) { return static_cast<char>(tolower(c)); });
+    return out;
+}
+
+bool equalsIgnoreCase(const string& a, const string& b) {
+    return toLowerCopy(trim(a)) == toLowerCopy(trim(b));
+}
+
 void validateNameOrThrow(const string& name) {
     string cleaned = trim(name);
     if (cleaned.empty())
@@ -102,6 +119,19 @@ void validateMajorOrThrow(const string& major) {
     string cleaned = trim(major);
     if (cleaned.empty())
         throw invalid_argument("Major cannot be empty.");
+
+    bool hasAlpha = false;
+    for (char c : cleaned) {
+        if (isalpha(static_cast<unsigned char>(c))) {
+            hasAlpha = true;
+            continue;
+        }
+        else if (MAJOR_ALLOWED_SPECIAL_CHARS.find(c) == string::npos)
+            throw invalid_argument("Major can contain letters, spaces, '-', '&', '/', and '.' only.");
+    }
+
+    if (!hasAlpha)
+        throw invalid_argument("Major must include letters.");
 }
 
 void printStudent(const Student& s) {
@@ -462,7 +492,7 @@ void quickSortGPA(Student arr[], int low, int high) {
 int linearSearchName(const string& name) {
     for (int i = 0; i < n; i++) {
         g_comparisons++;
-        if (students[i].name == name) return i;
+        if (equalsIgnoreCase(students[i].name, name)) return i;
     }
     return -1;
 }
@@ -484,7 +514,7 @@ int binarySearchID(int id) {
 
 void searchMenu() {
     printHeader("SEARCH DASHBOARD");
-    cout << "  1. Search by Name  (Linear Search — O(n))\n";
+    cout << "  1. Search by Name  (Linear Scan - O(n), partial + case-insensitive)\n";
     cout << "  2. Search by ID    (Binary Search — O(log n), sorts first)\n";
     cout << "  3. Search by Major (Linear Filter — O(n))\n";
     cout << "  Choice: ";
@@ -495,19 +525,28 @@ void searchMenu() {
         string name;
         cout << " Enter full name: "; getline(cin, name);
         name = trim(name);
+        if (name.empty()) {
+            cout << "\033[31m  [ERROR] Name cannot be empty.\033[0m\n";
+            return;
+        }
+        string loweredNameQuery = toLowerCopy(name);
+
         resetCounters();
         auto start = high_resolution_clock::now();
-        int idx = linearSearchName(name);
+        int found = 0;
+        for (int i = 0; i < n; i++) {
+            g_comparisons++;
+            if (toLowerCopy(students[i].name).find(loweredNameQuery) != string::npos) {
+                if (found == 0) cout << "\n  [FOUND]\n";
+                printStudent(students[i]);
+                found++;
+            }
+        }
         auto end = high_resolution_clock::now();
         double ms = duration<double, milli>(end - start).count();
 
-        if (idx != -1) {
-            cout << "\n  [FOUND]\n";
-            printStudent(students[idx]);
-        }
-        else {
-            cout << "  [NOT FOUND]\n";
-        }
+        if (found == 0) cout << "  [NOT FOUND]\n";
+        else cout << "  Total matches: " << found << "\n";
         cout << "  Comparisons: " << g_comparisons
             << "  |  Time: " << ms << " ms\n";
 
@@ -550,6 +589,10 @@ void searchMenu() {
         cout << "  Enter major: ";
         getline(cin, major);
         major = trim(major);
+        if (major.empty()) {
+            cout << "\033[31m  [ERROR] Major cannot be empty.\033[0m\n";
+            return;
+        }
 
         resetCounters();
         auto start = high_resolution_clock::now();
@@ -864,7 +907,11 @@ void runBenchmark() {
     cout << "  across 3 data types x 4 dataset sizes.\n";
     cout << "  Total runs: 60\n\n";
     cout << "  Press ENTER to start...\n";
-    cin.ignore(); cin.get();
+    cin.clear();
+    if (cin.rdbuf()->in_avail() > 0) {
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+    cin.get();
 
     int sizes[] = { 50, 1000, 10000, 100000 };
     int numSizes = 4;
@@ -977,11 +1024,11 @@ void sortMenu() {
 
     if (ch == 6) {
         cout << "\n  Sorting Descriptions:\n";
-        cout << "  • Bubble Sort   : O(n^2), simple, good when list is nearly sorted.\n";
-        cout << "  • Insertion Sort: O(n^2), strong on small/incremental datasets.\n";
-        cout << "  • Selection Sort: O(n^2), useful when minimizing writes/swaps.\n";
-        cout << "  • Merge Sort    : O(n log n), stable and consistently fast.\n";
-        cout << "  • Quick Sort    : Avg O(n log n), often fastest in practice.\n";
+        cout << "  • Bubble Sort   : O(n^2), simple, stable, best for nearly sorted data.\n";
+        cout << "  • Insertion Sort: O(n^2), stable, excellent for small or incremental lists.\n";
+        cout << "  • Selection Sort: O(n^2), in-place, minimizes swaps/writes, unstable.\n";
+        cout << "  • Merge Sort    : O(n log n), stable, predictable on large datasets.\n";
+        cout << "  • Quick Sort    : Avg O(n log n), in-place, usually fastest in practice.\n";
         return;
     }
 
@@ -1018,6 +1065,16 @@ void loadSampleData() {
     cout << "  3. 10,000  (large)\n";
     cout << "  4. 100,000 (very large — for benchmarking)\n";
     cout << "  Choice: "; int ch; cin >> ch;
+    if (cin.fail()) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "\033[31m  [ERROR] Invalid sample size choice.\033[0m\n";
+        return;
+    }
+    if (ch < 1 || ch > 4) {
+        cout << "\033[31m  [ERROR] Invalid sample size choice.\033[0m\n";
+        return;
+    }
 
     int sizes[] = { 50, 1000, 10000, 100000 };
     int sz = sizes[ch - 1];
