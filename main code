@@ -16,6 +16,7 @@
 #include <stdexcept>
 #include <cctype>
 #include <limits>
+#include <algorithm>
 using namespace std;
 using namespace chrono;
 
@@ -88,7 +89,8 @@ string trim(const string& s) {
 
 string toLowerCopy(const string& s) {
     string out = s;
-    for (char& c : out) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+    transform(out.begin(), out.end(), out.begin(),
+        [](unsigned char c) { return static_cast<char>(tolower(c)); });
     return out;
 }
 
@@ -123,6 +125,7 @@ void validateMajorOrThrow(const string& major) {
     string cleaned = trim(major);
     if (cleaned.empty())
         throw invalid_argument("Major cannot be empty.");
+    const string allowedSpecials = " -&/.";
 
     bool hasAlpha = false;
     for (char c : cleaned) {
@@ -130,7 +133,7 @@ void validateMajorOrThrow(const string& major) {
             hasAlpha = true;
             continue;
         }
-        else if (!(c == ' ' || c == '-' || c == '&' || c == '/' || c == '.'))
+        else if (allowedSpecials.find(c) == string::npos)
             throw invalid_argument("Major can contain letters, spaces, '-', '&', '/', and '.' only.");
     }
 
@@ -518,7 +521,7 @@ int binarySearchID(int id) {
 
 void searchMenu() {
     printHeader("SEARCH DASHBOARD");
-    cout << "  1. Search by Name  (Linear Scan — O(n), partial + case-insensitive)\n";
+    cout << "  1. Search by Name  (Linear Scan - O(n), partial + case-insensitive)\n";
     cout << "  2. Search by ID    (Binary Search — O(log n), sorts first)\n";
     cout << "  3. Search by Major (Linear Filter — O(n))\n";
     cout << "  Choice: ";
