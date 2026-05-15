@@ -13,6 +13,8 @@
 #include <cstdlib>
 #include <ctime>
 #include <cmath>
+#include <stdexcept>
+#include <cctype>
 using namespace std;
 using namespace chrono;
 
@@ -73,6 +75,35 @@ void printHeader(const string& title) {
     cout << "\033[1m\033[33m  " <<  title << "\033[0m\n";
     cout << "\033[1m\033[36m===========================================\033[0m\n";
 }
+string trim(const string& s) {
+    int start = 0, end = static_cast<int>(s.size()) - 1;
+    while (start <= end && isspace(static_cast<unsigned char>(s[start]))) start++;
+    while (end >= start && isspace(static_cast<unsigned char>(s[end]))) end--;
+    return (start <= end) ? s.substr(start, end - start + 1) : "";
+}
+
+void validateNameOrThrow(const string& name) {
+    string cleaned = trim(name);
+    if (cleaned.empty())
+        throw invalid_argument("Name cannot be empty.");
+
+    bool hasAlpha = false;
+    for (char c : cleaned) {
+        if (isalpha(static_cast<unsigned char>(c))) hasAlpha = true;
+        else if (!(c == ' ' || c == '-' || c == '\'' || c == '.'))
+            throw invalid_argument("Name can contain letters, spaces, '-', '.', and apostrophes only.");
+    }
+
+    if (!hasAlpha)
+        throw invalid_argument("Name must include letters.");
+}
+
+void validateMajorOrThrow(const string& major) {
+    string cleaned = trim(major);
+    if (cleaned.empty())
+        throw invalid_argument("Major cannot be empty.");
+}
+
 void printStudent(const Student& s) {
     cout << "  ----------------------------\n";
     cout << "  [ STUDENT PROFILE ]\n";
@@ -129,12 +160,18 @@ void addStudent() {
 
     cin.ignore(); // Clear buffer before getline
 
-    // 2. Validate Name (Must not be empty)
+    // 2. Validate Name (exception-safe validation)
     while (true) {
         cout << "Enter Name : ";
         getline(cin, s.name);
-        if (!s.name.empty()) break;
-        cout << "\033[31m  [ERROR] Name cannot be empty.\033[0m\n";
+        try {
+            validateNameOrThrow(s.name);
+            s.name = trim(s.name);
+            break;
+        }
+        catch (const exception& e) {
+            cout << "\033[31m  [ERROR] " << e.what() << "\033[0m\n";
+        }
     }
 
     // 3. Validate GPA (Already handled, but added type-safety)
@@ -169,8 +206,14 @@ void addStudent() {
     while (true) {
         cout << "Enter Major : ";
         getline(cin, s.major);
-        if (!s.major.empty()) break;
-        cout << "\033[31m  [ERROR] Major cannot be empty.\033[0m\n";
+        try {
+            validateMajorOrThrow(s.major);
+            s.major = trim(s.major);
+            break;
+        }
+        catch (const exception& e) {
+            cout << "\033[31m  [ERROR] " << e.what() << "\033[0m\n";
+        }
     }
 
     students[n++] = s;
@@ -211,19 +254,42 @@ void updateStudent() {
             cout << "\n  What to update?\n";
             cout << "  \033[33m1\033[0m. GPA\n";
             cout << "  \033[33m2\033[0m. Major\n";
-            cout << "  \033[33m3\033[0m. Both\n";
-            cout << "  Choice: ";
-            int ch; cin >> ch;
+             cout << "  \033[33m3\033[0m. Both\n";
+             cout << "  Choice: ";
+             int ch; cin >> ch;
+             if (ch < 1 || ch > 3) {
+                 cout << "\033[31m  [ERROR] Invalid update choice.\033[0m\n";
+                 return;
+             }
 
             if (ch == 1 || ch == 3) {
-                cout << "  New GPA   : "; cin >> students[i].gpa;
+                while (true) {
+                    cout << "  New GPA   : ";
+                    if (cin >> students[i].gpa && students[i].gpa >= 0.0 && students[i].gpa <= 4.0) {
+                        break;
+                    }
+                    cout << "\033[31m  [ERROR] Invalid GPA (0.0 - 4.0).\033[0m\n";
+                    cin.clear();
+                    cin.ignore(1000, '\n');
+                }
             }
-            if (ch == 2 || ch == 3) {
-                cin.ignore();
-                cout << "  New Major : "; getline(cin, students[i].major);
-            }
+             if (ch == 2 || ch == 3) {
+                 cin.ignore();
+                 while (true) {
+                    cout << "  New Major : ";
+                    getline(cin, students[i].major);
+                    try {
+                        validateMajorOrThrow(students[i].major);
+                        students[i].major = trim(students[i].major);
+                        break;
+                    }
+                    catch (const exception& e) {
+                        cout << "\033[31m  [ERROR] " << e.what() << "\033[0m\n";
+                     }
+                 }
+             }
 
-            cout << "\033[32m  [SUCCESS] Record updated.\033[0m\n";
+             cout << "\033[32m  [SUCCESS] Record updated.\033[0m\n";
             return;
         }
     }
@@ -417,15 +483,18 @@ int binarySearchID(int id) {
 }
 
 void searchMenu() {
-    printHeader("SEARCH");
-    cout << "  1. Search by Name (Linear Search — O(n))\n";
-    cout << "  2. Search by ID   (Binary Search — O(log n), sorts first)\n";
+    printHeader("SEARCH DASHBOARD");
+    cout << "  1. Search by Name  (Linear Search — O(n))\n";
+    cout << "  2. Search by ID    (Binary Search — O(log n), sorts first)\n";
+    cout << "  3. Search by Major (Linear Filter — O(n))\n";
     cout << "  Choice: ";
     int ch; cin >> ch;
+    cin.ignore(1000, '\n');
 
     if (ch == 1) {
         string name;
         cout << " Enter full name: "; getline(cin, name);
+        name = trim(name);
         resetCounters();
         auto start = high_resolution_clock::now();
         int idx = linearSearchName(name);
@@ -475,6 +544,34 @@ void searchMenu() {
         }
         cout << "  Comparisons: " << g_comparisons
             << "  |  Time: " << ms << " ms\n";
+    }
+    else if (ch == 3) {
+        string major;
+        cout << "  Enter major: ";
+        getline(cin, major);
+        major = trim(major);
+
+        resetCounters();
+        auto start = high_resolution_clock::now();
+        int found = 0;
+        for (int i = 0; i < n; i++) {
+            g_comparisons++;
+            if (students[i].major == major) {
+                if (found == 0) cout << "\n  [FOUND]\n";
+                printStudent(students[i]);
+                found++;
+            }
+        }
+        auto end = high_resolution_clock::now();
+        double ms = duration<double, milli>(end - start).count();
+
+        if (found == 0) cout << "  [NOT FOUND]\n";
+        else cout << "  Total in major: " << found << "\n";
+        cout << "  Comparisons: " << g_comparisons
+            << "  |  Time: " << ms << " ms\n";
+    }
+    else {
+        cout << "\033[31m  [ERROR] Invalid search choice.\033[0m\n";
     }
 }
 
@@ -562,6 +659,11 @@ void filterByMajor() {
     cin.ignore();
     string major;
     cout << "  Enter major name: "; getline(cin, major);
+    major = trim(major);
+    if (major.empty()) {
+        cout << "\033[31m  [ERROR] Major cannot be empty.\033[0m\n";
+        return;
+    }
 
     int count = 0;
     for (int i = 0; i < n; i++) {
@@ -865,12 +967,23 @@ void runBenchmark() {
 
 void sortMenu() {
     printHeader("SORT STUDENTS");
-    cout << "  1. Bubble Sort    — by GPA descending  (best for nearly sorted)\n";
-    cout << "  2. Insertion Sort — by ID ascending    (best for small/incremental)\n";
-    cout << "  3. Selection Sort — by Age ascending   (minimizes swaps)\n";
-    cout << "  4. Merge Sort     — by Name alphabetical (stable, guaranteed O(n log n))\n";
-    cout << "  5. Quick Sort     — by GPA descending  (fastest average for large data)\n";
+    cout << "  1. Bubble Sort    — by GPA descending\n";
+    cout << "  2. Insertion Sort — by ID ascending\n";
+    cout << "  3. Selection Sort — by Age ascending\n";
+    cout << "  4. Merge Sort     — by Name alphabetical\n";
+    cout << "  5. Quick Sort     — by GPA descending\n";
+    cout << "  6. View Sorting Descriptions\n";
     cout << "  Choice: "; int ch; cin >> ch;
+
+    if (ch == 6) {
+        cout << "\n  Sorting Descriptions:\n";
+        cout << "  • Bubble Sort   : O(n^2), simple, good when list is nearly sorted.\n";
+        cout << "  • Insertion Sort: O(n^2), strong on small/incremental datasets.\n";
+        cout << "  • Selection Sort: O(n^2), useful when minimizing writes/swaps.\n";
+        cout << "  • Merge Sort    : O(n log n), stable and consistently fast.\n";
+        cout << "  • Quick Sort    : Avg O(n log n), often fastest in practice.\n";
+        return;
+    }
 
     resetCounters();
     auto start = high_resolution_clock::now();
@@ -880,6 +993,10 @@ void sortMenu() {
     else if (ch == 3) { selectionSortAge(students, n);     cout << "  Sorted by Age (Selection Sort).\n"; }
     else if (ch == 4) { mergeSortName(students, 0, n - 1); cout << "  Sorted by Name (Merge Sort).\n"; }
     else if (ch == 5) { quickSortGPA(students, 0, n - 1);  cout << "  Sorted by GPA (Quick Sort).\n"; }
+    else {
+        cout << "\033[31m  [ERROR] Invalid sort choice.\033[0m\n";
+        return;
+    }
 
     auto end = high_resolution_clock::now();
     double ms = duration<double, milli>(end - start).count();
@@ -929,6 +1046,8 @@ void printMainMenu() {
     cout << "   STUDENT GRADE MANAGEMENT SYSTEM\n";
     cout << "   Design & Analysis of Algorithms\n";
     cout << "\033[2m ==========================================\n\033[0m";
+    cout << "\033[2m   Dashboard Search: Name / ID / Major\033[0m\n";
+    cout << "\033[2m ==========================================\n\033[0m";
     cout << "\033[0m";
 
     cout << "\033[2m   Students in memory: \033[0m\033[1m" << n << "\033[0m\n";
@@ -943,7 +1062,7 @@ void printMainMenu() {
     cout << "\033[2m ==========================================\n\033[0m";
     cout << "\033[1m\033[33m   ALGORITHMS\n\033[0m";
     cout << "\033[32m    5  \033[0m" << "Sort Students\n";
-    cout << "\033[32m    6  \033[0m" << "Search Students\n";
+    cout << "\033[32m    6  \033[0m" << "Search Dashboard\n";
 
     cout << "\033[2m ==========================================\n\033[0m";
     cout << "\033[1m\033[33m   ANALYTICS\n\033[0m";
