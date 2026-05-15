@@ -93,7 +93,7 @@ string toLowerCopy(const string& s) {
 }
 
 bool containsIgnoreCase(const string& text, const string& query) {
-    string t = toLowerCopy(trim(text));
+    string t = toLowerCopy(text);
     string q = toLowerCopy(trim(query));
     if (q.empty()) return false;
     return t.find(q) != string::npos;
@@ -126,7 +126,10 @@ void validateMajorOrThrow(const string& major) {
 
     bool hasAlpha = false;
     for (char c : cleaned) {
-        if (isalpha(static_cast<unsigned char>(c))) hasAlpha = true;
+        if (isalpha(static_cast<unsigned char>(c))) {
+            hasAlpha = true;
+            continue;
+        }
         else if (!(c == ' ' || c == '-' || c == '&' || c == '/' || c == '.'))
             throw invalid_argument("Major can contain letters, spaces, '-', '&', '/', and '.' only.");
     }
@@ -515,7 +518,7 @@ int binarySearchID(int id) {
 
 void searchMenu() {
     printHeader("SEARCH DASHBOARD");
-    cout << "  1. Search by Name  (Linear Search — O(n), partial + case-insensitive)\n";
+    cout << "  1. Search by Name  (Linear Scan — O(n), partial + case-insensitive)\n";
     cout << "  2. Search by ID    (Binary Search — O(log n), sorts first)\n";
     cout << "  3. Search by Major (Linear Filter — O(n))\n";
     cout << "  Choice: ";
