@@ -25,6 +25,7 @@ using namespace chrono;
 // ============================================================
 
 const int MAX = 100000;
+const string MAJOR_ALLOWED_SPECIALS = " -&/.";
 
 long long g_comparisons = 0;
 long long g_swaps = 0;
@@ -94,13 +95,6 @@ string toLowerCopy(const string& s) {
     return out;
 }
 
-bool containsIgnoreCase(const string& text, const string& query) {
-    string t = toLowerCopy(text);
-    string q = toLowerCopy(trim(query));
-    if (q.empty()) return false;
-    return t.find(q) != string::npos;
-}
-
 bool equalsIgnoreCase(const string& a, const string& b) {
     return toLowerCopy(trim(a)) == toLowerCopy(trim(b));
 }
@@ -125,7 +119,6 @@ void validateMajorOrThrow(const string& major) {
     string cleaned = trim(major);
     if (cleaned.empty())
         throw invalid_argument("Major cannot be empty.");
-    const string allowedSpecials = " -&/.";
 
     bool hasAlpha = false;
     for (char c : cleaned) {
@@ -133,7 +126,7 @@ void validateMajorOrThrow(const string& major) {
             hasAlpha = true;
             continue;
         }
-        else if (allowedSpecials.find(c) == string::npos)
+        else if (MAJOR_ALLOWED_SPECIALS.find(c) == string::npos)
             throw invalid_argument("Major can contain letters, spaces, '-', '&', '/', and '.' only.");
     }
 
@@ -536,13 +529,14 @@ void searchMenu() {
             cout << "\033[31m  [ERROR] Name cannot be empty.\033[0m\n";
             return;
         }
+        string loweredNameQuery = toLowerCopy(name);
 
         resetCounters();
         auto start = high_resolution_clock::now();
         int found = 0;
         for (int i = 0; i < n; i++) {
             g_comparisons++;
-            if (containsIgnoreCase(students[i].name, name)) {
+            if (toLowerCopy(students[i].name).find(loweredNameQuery) != string::npos) {
                 if (found == 0) cout << "\n  [FOUND]\n";
                 printStudent(students[i]);
                 found++;
@@ -1071,6 +1065,12 @@ void loadSampleData() {
     cout << "  3. 10,000  (large)\n";
     cout << "  4. 100,000 (very large — for benchmarking)\n";
     cout << "  Choice: "; int ch; cin >> ch;
+    if (cin.fail()) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "\033[31m  [ERROR] Invalid sample size choice.\033[0m\n";
+        return;
+    }
     if (ch < 1 || ch > 4) {
         cout << "\033[31m  [ERROR] Invalid sample size choice.\033[0m\n";
         return;
