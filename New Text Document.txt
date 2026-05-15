@@ -1,0 +1,995 @@
+/*
+============================================================
+  STUDENT GRADE MANAGEMENT SYSTEM
+  Design & Analysis of Algorithms — University Project
+  Full Implementation: CRUD + 5 Sorting + 2 Searching
+                     + AVL Tree + Benchmarking + Statistics
+============================================================
+*/
+
+#include <iostream>
+#include <string>
+#include <chrono>
+#include <cstdlib>
+#include <ctime>
+#include <cmath>
+using namespace std;
+using namespace chrono;
+
+// ============================================================
+//  CONSTANTS & GLOBALS
+// ============================================================
+
+const int MAX = 100000;
+
+long long g_comparisons = 0;
+long long g_swaps = 0;
+
+// ============================================================
+//  DATA STRUCTURE
+// ============================================================
+
+struct Student {
+    int    id;
+    string name;
+    double gpa;
+    int    age;
+    string major;
+};
+
+Student students[MAX];
+Student backup[MAX];   // used to restore original order for fair benchmarking
+int n = 0;
+
+// ============================================================
+//  UTILITY
+// ============================================================
+
+void swapStudents(Student& a, Student& b) {
+    Student temp = a;
+    a = b;
+    b = temp;
+    g_swaps++;
+}
+
+void pause() {
+    cout << "\n\033[2m  Press Enter to continue...\033[0m";
+    cin.ignore(1000, '\n');
+    cin.get();
+}
+
+void copyArray(Student src[], Student dst[], int size) {
+    for (int i = 0; i < size; i++)
+        dst[i] = src[i];
+}
+
+void resetCounters() {
+    g_comparisons = 0;
+    g_swaps = 0;
+}
+
+void printHeader(const string& title) {
+    cout << "\033[1m\033[36m===========================================\033[0m\n";
+    cout << "\033[1m\033[33m  " <<  title << "\033[0m\n";
+    cout << "\033[1m\033[36m===========================================\033[0m\n";
+}
+void printStudent(const Student& s) {
+    cout << "  ----------------------------\n";
+    cout << "  [ STUDENT PROFILE ]\n";
+    cout << "  ----------------------------\n";
+    cout << "  ID      : " << s.id << "\n";
+    cout << "  Name    : " << s.name << "\n";
+    cout << "  GPA     : " << (s.gpa >= 3.0 ? "\033[32m" : "\033[33m") << s.gpa << "\033[0m\n";
+    cout << "  Age     : " << s.age << "\n";
+    cout << "  Major   : " << s.major << "\n";
+    cout << "  ----------------------------\n";
+}
+
+// ============================================================
+//  SECTION 1 — CRUD OPERATIONS
+// ============================================================
+
+bool idExists(int id) {
+    for (int i = 0; i < n; i++) {
+        g_comparisons++;
+        if (students[i].id == id)
+            return true;
+    }
+    return false;
+}
+
+// ─────────────────────────────────────────
+void addStudent() {
+    printHeader("ADD STUDENT");
+
+    if (n >= MAX) {
+        cout << "\033[31m  [ERROR] Storage full!\033[0m\n";
+        return;
+    }
+
+    Student s;
+
+    // 1. Validate ID (Must be positive integer and unique)
+    while (true) {
+        cout << "  Enter ID : ";
+        if (cin >> s.id && s.id > 0) {
+            if (idExists(s.id)) {
+                cout << "\033[31m  [ERROR] ID already exists. Try again.\033[0m\n";
+            }
+            else {
+                break; // Valid and unique
+            }
+        }
+        else {
+            cout << "\033[31m  [ERROR] Invalid ID. Please enter a positive number.\033[0m\n";
+            cin.clear();
+            cin.ignore(1000, '\n');
+        }
+    }
+
+    cin.ignore(); // Clear buffer before getline
+
+    // 2. Validate Name (Must not be empty)
+    while (true) {
+        cout << "Enter Name : ";
+        getline(cin, s.name);
+        if (!s.name.empty()) break;
+        cout << "\033[31m  [ERROR] Name cannot be empty.\033[0m\n";
+    }
+
+    // 3. Validate GPA (Already handled, but added type-safety)
+    while (true) {
+        cout << "Enter GPA : ";
+        if (cin >> s.gpa && s.gpa >= 0.0 && s.gpa <= 4.0) {
+            break;
+        }
+        else {
+            cout << "\033[31m  [ERROR] Invalid GPA (0.0 - 4.0). Re-enter: \033[0m";
+            cin.clear();
+            cin.ignore(1000, '\n');
+        }
+    }
+
+    // 4. Validate Age (Reasonable range)
+    while (true) {
+        cout << "Enter Age : ";
+        if (cin >> s.age && s.age >= 16 && s.age <= 100) {
+            break;
+        }
+        else {
+            cout << "\033[31m  [ERROR] Invalid Age (16 - 100). Re-enter: \033[0m";
+            cin.clear();
+            cin.ignore(1000, '\n');
+        }
+    }
+
+    cin.ignore();
+
+    // 5. Validate Major
+    while (true) {
+        cout << "Enter Major : ";
+        getline(cin, s.major);
+        if (!s.major.empty()) break;
+        cout << "\033[31m  [ERROR] Major cannot be empty.\033[0m\n";
+    }
+
+    students[n++] = s;
+    cout << "\033[32m\n  [SUCCESS] Student " << s.name << " added successfully!\033[0m\n";
+}
+
+// ─────────────────────────────────────────
+void deleteStudent() {
+    printHeader("DELETE STUDENT");
+
+    int id;
+    cout << "Enter ID to delete: "; cin >> id;
+
+    for (int i = 0; i < n; i++) {
+        if (students[i].id == id) {
+            for (int j = i; j < n - 1; j++)
+                students[j] = students[j + 1];
+            n--;
+            cout << "\033[32m  [SUCCESS] Student deleted.\033[0m\n";
+            return;
+        }
+    }
+    cout << "\033[31m  [ERROR] ID not found.\033[0m\n";
+}
+
+// ─────────────────────────────────────────
+void updateStudent() {
+    printHeader("UPDATE STUDENT");
+
+    int id;
+    cout << "Enter ID to update: "; cin >> id;
+
+    for (int i = 0; i < n; i++) {
+        if (students[i].id == id) {
+            cout << "\n  Current record:\n";
+            printStudent(students[i]);
+
+            cout << "\n  What to update?\n";
+            cout << "  \033[33m1\033[0m. GPA\n";
+            cout << "  \033[33m2\033[0m. Major\n";
+            cout << "  \033[33m3\033[0m. Both\n";
+            cout << "  Choice: ";
+            int ch; cin >> ch;
+
+            if (ch == 1 || ch == 3) {
+                cout << "  New GPA   : "; cin >> students[i].gpa;
+            }
+            if (ch == 2 || ch == 3) {
+                cin.ignore();
+                cout << "  New Major : "; getline(cin, students[i].major);
+            }
+
+            cout << "\033[32m  [SUCCESS] Record updated.\033[0m\n";
+            return;
+        }
+    }
+    cout << "\033[31m  [ERROR] ID not found.\033[0m\n";
+}
+
+// ─────────────────────────────────────────
+void displayStudents() {
+    printHeader("ALL STUDENTS");
+
+    if (n == 0) {
+        cout << "\033[31m  No records found.\033[0m\n";
+        return;
+    }
+
+    cout << "\033[2m  Total records: \033[0m\033[1m" << n << "\033[0m\n\n";
+
+    for (int i = 0; i < n; i++)
+        printStudent(students[i]);
+}
+// ============================================================
+//  SECTION 2 — SORTING ALGORITHMS (ALL MANUAL, NO STD SORT)
+// ============================================================
+
+// --- 1. BUBBLE SORT (by GPA, descending) ---
+// Best: O(n)  |  Average: O(n²)  |  Worst: O(n²)
+// Scenario: Re-sort after adding one student to a nearly-sorted list.
+
+void bubbleSortGPA(Student arr[], int size) {
+    for (int i = 0; i < size - 1; i++) {
+        bool swapped = false;
+        for (int j = 0; j < size - i - 1; j++) {
+            g_comparisons++;
+            if (arr[j].gpa < arr[j + 1].gpa) {
+                swapStudents(arr[j], arr[j + 1]);
+                swapped = true;
+            }
+        }
+        if (!swapped) break;   // early exit — best case O(n)
+    }
+}
+
+// --- 2. INSERTION SORT (by ID, ascending) ---
+// Best: O(n)  |  Average: O(n²)  |  Worst: O(n²)
+// Scenario: Small class roster built incrementally.
+
+void insertionSortID(Student arr[], int size) {
+    for (int i = 1; i < size; i++) {
+        Student key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && arr[j].id > key.id) {
+            g_comparisons++;
+            arr[j + 1] = arr[j];
+            g_swaps++;
+            j--;
+        }
+        g_comparisons++;
+        arr[j + 1] = key;
+    }
+}
+
+// --- 3. SELECTION SORT (by Age, ascending) ---
+// Best: O(n²)  |  Average: O(n²)  |  Worst: O(n²)
+// Scenario: When minimizing write (swap) operations matters.
+
+void selectionSortAge(Student arr[], int size) {
+    for (int i = 0; i < size - 1; i++) {
+        int minIdx = i;
+        for (int j = i + 1; j < size; j++) {
+            g_comparisons++;
+            if (arr[j].age < arr[minIdx].age)
+                minIdx = j;
+        }
+        if (minIdx != i)
+            swapStudents(arr[i], arr[minIdx]);
+    }
+}
+
+// --- 4. MERGE SORT (by Name, alphabetical) ---
+// Best: O(n log n)  |  Average: O(n log n)  |  Worst: O(n log n)
+// Scenario: Large export requiring guaranteed O(n log n), stable sort.
+
+void mergeByName(Student arr[], int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    Student* L = new Student[n1];
+    Student* R = new Student[n2];
+
+    for (int i = 0; i < n1; i++) L[i] = arr[left + i];
+    for (int j = 0; j < n2; j++) R[j] = arr[mid + 1 + j];
+
+    int i = 0, j = 0, k = left;
+
+    while (i < n1 && j < n2) {
+        g_comparisons++;
+        if (L[i].name <= R[j].name)
+            arr[k++] = L[i++];
+        else
+            arr[k++] = R[j++];
+    }
+
+    while (i < n1) arr[k++] = L[i++];
+    while (j < n2) arr[k++] = R[j++];
+
+    delete[] L;
+    delete[] R;
+}
+
+void mergeSortName(Student arr[], int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+        mergeSortName(arr, left, mid);
+        mergeSortName(arr, mid + 1, right);
+        mergeByName(arr, left, mid, right);
+    }
+}
+
+// --- 5. QUICK SORT (by GPA, descending) ---
+// Best: O(n log n)  |  Average: O(n log n)  |  Worst: O(n²)
+// Scenario: Large directory sort, average-case fastest.
+// Uses median-of-three pivot to reduce worst-case probability.
+
+int medianOfThree(Student arr[], int low, int high) {
+    int mid = low + (high - low) / 2;
+    if (arr[low].gpa < arr[mid].gpa)   swapStudents(arr[low], arr[mid]);
+    if (arr[low].gpa < arr[high].gpa)  swapStudents(arr[low], arr[high]);
+    if (arr[mid].gpa < arr[high].gpa)  swapStudents(arr[mid], arr[high]);
+    swapStudents(arr[mid], arr[high - 1]);
+    return high - 1;
+}
+
+int partitionGPA(Student arr[], int low, int high) {
+    double pivot;
+    if (high - low < 3) {
+        pivot = arr[high].gpa;
+    }
+    else {
+        int pivotIdx = medianOfThree(arr, low, high);
+        pivot = arr[pivotIdx].gpa;
+    }
+
+    int i = low - 1;
+    for (int j = low; j < high; j++) {
+        g_comparisons++;
+        if (arr[j].gpa > pivot) {
+            i++;
+            swapStudents(arr[i], arr[j]);
+        }
+    }
+    swapStudents(arr[i + 1], arr[high]);
+    return i + 1;
+}
+
+void quickSortGPA(Student arr[], int low, int high) {
+    if (low < high) {
+        int pi = partitionGPA(arr, low, high);
+        quickSortGPA(arr, low, pi - 1);
+        quickSortGPA(arr, pi + 1, high);
+    }
+}
+
+// ============================================================
+//  SECTION 3 — SEARCHING ALGORITHMS
+// ============================================================
+
+// --- LINEAR SEARCH (by Name) ---
+// O(n) — no precondition required
+
+int linearSearchName(const string& name) {
+    for (int i = 0; i < n; i++) {
+        g_comparisons++;
+        if (students[i].name == name) return i;
+    }
+    return -1;
+}
+
+// --- BINARY SEARCH (by ID) ---
+// O(log n) — array MUST be sorted by ID first
+
+int binarySearchID(int id) {
+    int left = 0, right = n - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        g_comparisons++;
+        if (students[mid].id == id) return mid;
+        else if (students[mid].id < id) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}
+
+void searchMenu() {
+    printHeader("SEARCH");
+    cout << "  1. Search by Name (Linear Search — O(n))\n";
+    cout << "  2. Search by ID   (Binary Search — O(log n), sorts first)\n";
+    cout << "  Choice: ";
+    int ch; cin >> ch;
+
+    if (ch == 1) {
+        string name;
+        cout << " Enter full name: "; getline(cin, name);
+        resetCounters();
+        auto start = high_resolution_clock::now();
+        int idx = linearSearchName(name);
+        auto end = high_resolution_clock::now();
+        double ms = duration<double, milli>(end - start).count();
+
+        if (idx != -1) {
+            cout << "\n  [FOUND]\n";
+            printStudent(students[idx]);
+        }
+        else {
+            cout << "  [NOT FOUND]\n";
+        }
+        cout << "  Comparisons: " << g_comparisons
+            << "  |  Time: " << ms << " ms\n";
+
+    }
+    else if (ch == 2) {
+        int id;
+        cout << "  Enter ID: "; cin >> id;
+
+        // Sort by ID first (required for binary search)
+        static Student temp[MAX];
+        copyArray(students, temp, n);
+        resetCounters();
+        insertionSortID(temp, n);
+
+        auto start = high_resolution_clock::now();
+        // binary search on temp array
+        int left = 0, right = n - 1, found = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            g_comparisons++;
+            if (temp[mid].id == id) { found = mid; break; }
+            else if (temp[mid].id < id) left = mid + 1;
+            else right = mid - 1;
+        }
+        auto end = high_resolution_clock::now();
+        double ms = duration<double, milli>(end - start).count();
+
+        if (found != -1) {
+            cout << "\n  [FOUND]\n";
+            printStudent(temp[found]);
+        }
+        else {
+            cout << "  [NOT FOUND]\n";
+        }
+        cout << "  Comparisons: " << g_comparisons
+            << "  |  Time: " << ms << " ms\n";
+    }
+}
+
+// ============================================================
+//  SECTION 4 — EXTENDED FUNCTIONALITIES
+// ============================================================
+
+// --- STATISTICS ---
+void statistics() {
+    printHeader("STATISTICAL ANALYSIS");
+
+    if (n == 0) { cout << "  No data.\n"; return; }
+
+    double sum = 0, maxG = students[0].gpa, minG = students[0].gpa;
+
+    for (int i = 0; i < n; i++) {
+        sum += students[i].gpa;
+        if (students[i].gpa > maxG) maxG = students[i].gpa;
+        if (students[i].gpa < minG) minG = students[i].gpa;
+    }
+
+    double mean = sum / n;
+    double variance = 0;
+    for (int i = 0; i < n; i++)
+        variance += (students[i].gpa - mean) * (students[i].gpa - mean);
+    double stdDev = sqrt(variance / n);
+
+    // Median: sort a copy, pick middle
+    static Student temp[MAX];
+    copyArray(students, temp, n);
+    quickSortGPA(temp, 0, n - 1);
+    double median = (n % 2 == 0)
+        ? (temp[n / 2 - 1].gpa + temp[n / 2].gpa) / 2.0
+        : temp[n / 2].gpa;
+
+    cout << "  Total Students : " << n << "\n";
+    cout << "  Average GPA    : " << mean << "\n";
+    cout << "  Highest GPA    : " << maxG << "\n";
+    cout << "  Lowest GPA     : " << minG << "\n";
+    cout << "  Median GPA     : " << median << "\n";
+    cout << "  Std Deviation  : " << stdDev << "\n";
+
+    // Grade distribution
+    int dist[5] = { 0 }; // 0-0.99, 1-1.99, 2-2.99, 3-3.49, 3.5-4.0
+    for (int i = 0; i < n; i++) {
+        double g = students[i].gpa;
+        if (g < 1.0)       dist[0]++;
+        else if (g < 2.0)  dist[1]++;
+        else if (g < 3.0)  dist[2]++;
+        else if (g < 3.5)  dist[3]++;
+        else               dist[4]++;
+    }
+
+    cout << "\n  GPA Distribution:\n";
+    cout << "  < 1.0  (F) : " << dist[0] << " students\n";
+    cout << "  1.0-1.99(D): " << dist[1] << " students\n";
+    cout << "  2.0-2.99(C): " << dist[2] << " students\n";
+    cout << "  3.0-3.49(B): " << dist[3] << " students\n";
+    cout << "  3.5-4.0 (A): " << dist[4] << " students\n";
+}
+
+// --- TOP-K RANKING ---
+void topK() {
+    printHeader("TOP-K RANKING");
+
+    int k;
+    cout << "  Enter K (top how many?): "; cin >> k;
+    if (k > n) k = n;
+
+    static Student temp[MAX];
+    copyArray(students, temp, n);
+    quickSortGPA(temp, 0, n - 1);
+
+    cout << "\n  Top " << k << " students by GPA:\n\n";
+    for (int i = 0; i < k; i++) {
+        cout << "  #" << (i + 1) << " ";
+        printStudent(temp[i]);
+    }
+}
+
+// --- FILTER BY MAJOR ---
+void filterByMajor() {
+    printHeader("FILTER BY MAJOR");
+
+    cin.ignore();
+    string major;
+    cout << "  Enter major name: "; getline(cin, major);
+
+    int count = 0;
+    for (int i = 0; i < n; i++) {
+        if (students[i].major == major) {
+            printStudent(students[i]);
+            count++;
+        }
+    }
+
+    if (count == 0) cout << "  No students found in that major.\n";
+    else cout << "\n  Total found: " << count << "\n";
+}
+
+// --- DUPLICATE DETECTOR ---
+void detectDuplicates() {
+    printHeader("DUPLICATE DETECTOR");
+
+    if (n < 2) { cout << "  Need at least 2 records.\n"; return; }
+
+    // Sort a copy by GPA to find duplicate GPAs
+    static Student temp[MAX];
+    copyArray(students, temp, n);
+    quickSortGPA(temp, 0, n - 1);
+
+    bool found = false;
+    cout << "  Checking duplicate GPAs (post-sort adjacent scan O(n))...\n\n";
+    for (int i = 0; i < n - 1; i++) {
+        if (temp[i].gpa == temp[i + 1].gpa) {
+            cout << "  Duplicate GPA " << temp[i].gpa << ": "
+                << temp[i].name << " & " << temp[i + 1].name << "\n";
+            found = true;
+        }
+    }
+
+    if (!found) cout << "  No duplicate GPAs found.\n";
+}
+
+// ============================================================
+//  SECTION 5 — AVL TREE (for ID-based fast lookup comparison)
+// ============================================================
+
+struct AVLNode {
+    Student data;
+    AVLNode* left, * right;
+    int height;
+};
+
+AVLNode* avlRoot = NULL;
+
+int avlHeight(AVLNode* node) {
+    return node ? node->height : 0;
+}
+
+int avlMax(int a, int b) { return (a > b) ? a : b; }
+
+AVLNode* avlCreate(Student s) {
+    AVLNode* node = new AVLNode;
+    node->data = s;
+    node->left = node->right = NULL;
+    node->height = 1;
+    return node;
+}
+
+AVLNode* avlRightRotate(AVLNode* y) {
+    AVLNode* x = y->left;
+    AVLNode* T2 = x->right;
+    x->right = y;
+    y->left = T2;
+    y->height = avlMax(avlHeight(y->left), avlHeight(y->right)) + 1;
+    x->height = avlMax(avlHeight(x->left), avlHeight(x->right)) + 1;
+    return x;
+}
+
+AVLNode* avlLeftRotate(AVLNode* x) {
+    AVLNode* y = x->right;
+    AVLNode* T2 = y->left;
+    y->left = x;
+    x->right = T2;
+    x->height = avlMax(avlHeight(x->left), avlHeight(x->right)) + 1;
+    y->height = avlMax(avlHeight(y->left), avlHeight(y->right)) + 1;
+    return y;
+}
+
+int avlGetBalance(AVLNode* node) {
+    return node ? avlHeight(node->left) - avlHeight(node->right) : 0;
+}
+
+AVLNode* avlInsert(AVLNode* node, Student s) {
+    if (!node) return avlCreate(s);
+    if (s.id < node->data.id)       node->left = avlInsert(node->left, s);
+    else if (s.id > node->data.id)  node->right = avlInsert(node->right, s);
+    else return node;
+
+    node->height = 1 + avlMax(avlHeight(node->left), avlHeight(node->right));
+    int balance = avlGetBalance(node);
+
+    if (balance > 1 && s.id < node->left->data.id)  return avlRightRotate(node);
+    if (balance < -1 && s.id > node->right->data.id) return avlLeftRotate(node);
+    if (balance > 1 && s.id > node->left->data.id) { node->left = avlLeftRotate(node->left);  return avlRightRotate(node); }
+    if (balance < -1 && s.id < node->right->data.id) { node->right = avlRightRotate(node->right); return avlLeftRotate(node); }
+
+    return node;
+}
+
+AVLNode* avlSearch(AVLNode* node, int id) {
+    if (!node) return NULL;
+    g_comparisons++;
+    if (id == node->data.id) return node;
+    if (id < node->data.id)  return avlSearch(node->left, id);
+    return avlSearch(node->right, id);
+}
+
+void avlInorder(AVLNode* node) {
+    if (node) {
+        avlInorder(node->left);
+        printStudent(node->data);
+        avlInorder(node->right);
+    }
+}
+
+void avlMenu() {
+    printHeader("AVL TREE");
+    cout << "  1. Insert all students into AVL tree\n";
+    cout << "  2. Search by ID in AVL tree (O(log n))\n";
+    cout << "  3. Display inorder (sorted by ID)\n";
+    cout << "  Choice: "; int ch; cin >> ch;
+
+    if (ch == 1) {
+        avlRoot = NULL;
+        for (int i = 0; i < n; i++)
+            avlRoot = avlInsert(avlRoot, students[i]);
+        cout << "  [SUCCESS] All " << n << " students inserted into AVL tree.\n";
+    }
+    else if (ch == 2) {
+        int id; cout << "  Enter ID: "; cin >> id;
+        resetCounters();
+        AVLNode* res = avlSearch(avlRoot, id);
+        if (res) { cout << "  [FOUND]\n"; printStudent(res->data); }
+        else       cout << "  [NOT FOUND]\n";
+        cout << "  Comparisons: " << g_comparisons << "\n";
+    }
+    else if (ch == 3) {
+        avlInorder(avlRoot);
+    }
+}
+
+// ============================================================
+//  SECTION 6 — BENCHMARKING ENGINE
+// ============================================================
+
+void generateRandom(Student arr[], int size) {
+    srand(time(0));
+    string names[] = { "Ali","Sara","Omar","Lina","Hassan","Nour","Yusuf","Dina","Khaled","Maya" };
+    string majors[] = { "CS","EE","ME","CE","IT","Math","Physics","Bio","Chem","Arch" };
+
+    for (int i = 0; i < size; i++) {
+        arr[i].id = i + 1;
+        arr[i].name = names[rand() % 10] + " " + to_string(i);
+        arr[i].gpa = (rand() % 401) / 100.0;
+        arr[i].age = 18 + rand() % 10;
+        arr[i].major = majors[rand() % 10];
+    }
+}
+
+void generateNearlySorted(Student arr[], int size) {
+    generateRandom(arr, size);
+    quickSortGPA(arr, 0, size - 1);
+    int disturb = size / 20;
+    for (int i = 0; i < disturb; i++) {
+        int a = rand() % size, b = rand() % size;
+        swapStudents(arr[a], arr[b]);
+    }
+}
+
+void generateReverseSorted(Student arr[], int size) {
+    generateRandom(arr, size);
+    quickSortGPA(arr, 0, size - 1);
+    // reverse
+    for (int i = 0, j = size - 1; i < j; i++, j--)
+        swapStudents(arr[i], arr[j]);
+}
+
+struct BenchResult {
+    string algorithm;
+    int    dataSize;
+    string dataType;
+    double timeMs;
+    long long comparisons;
+    long long swaps;
+};
+
+BenchResult results[200];
+int resultCount = 0;
+
+void runBenchmark() {
+    printHeader("BENCHMARKING ENGINE");
+    cout << "  This will benchmark ALL 5 sorting algorithms\n";
+    cout << "  across 3 data types x 4 dataset sizes.\n";
+    cout << "  Total runs: 60\n\n";
+    cout << "  Press ENTER to start...\n";
+    cin.ignore(); cin.get();
+
+    int sizes[] = { 50, 1000, 10000, 100000 };
+    int numSizes = 4;
+
+    string dataTypes[] = { "Random", "Nearly Sorted", "Reverse Sorted" };
+
+    resultCount = 0;
+
+    for (int di = 0; di < 3; di++) {
+        for (int si = 0; si < numSizes; si++) {
+            int sz = sizes[si];
+            Student* base = new Student[sz];
+
+            if (di == 0)      generateRandom(base, sz);
+            else if (di == 1) generateNearlySorted(base, sz);
+            else              generateReverseSorted(base, sz);
+
+            Student* arr = new Student[sz];
+
+            // Test each algorithm
+            string algNames[] = { "Bubble Sort","Insertion Sort","Selection Sort","Merge Sort","Quick Sort" };
+
+            for (int ai = 0; ai < 5; ai++) {
+                // Skip O(n²) on large datasets if they'd time out
+                // (still run them for completeness up to 10000)
+                bool skipHeavy = (sz == 100000 && ai < 3);
+
+                copyArray(base, arr, sz);
+                resetCounters();
+
+                auto start = high_resolution_clock::now();
+
+                if (!skipHeavy) {
+                    if (ai == 0) bubbleSortGPA(arr, sz);
+                    else if (ai == 1) insertionSortID(arr, sz);
+                    else if (ai == 2) selectionSortAge(arr, sz);
+                    else if (ai == 3) mergeSortName(arr, 0, sz - 1);
+                    else              quickSortGPA(arr, 0, sz - 1);
+                }
+
+                auto end = high_resolution_clock::now();
+                double ms = skipHeavy ? -1.0
+                    : duration<double, milli>(end - start).count();
+
+                BenchResult& r = results[resultCount++];
+                r.algorithm = algNames[ai];
+                r.dataSize = sz;
+                r.dataType = dataTypes[di];
+                r.timeMs = ms;
+                r.comparisons = skipHeavy ? -1 : g_comparisons;
+                r.swaps = skipHeavy ? -1 : g_swaps;
+            }
+
+            delete[] base;
+            delete[] arr;
+        }
+    }
+
+    // Print results table
+    cout << "\n\n";
+    cout << "==================================\n";
+    cout << "  BENCHMARK RESULTS\n";
+    cout << "==================================\n";
+    cout << "  Algorithm        | Size    | Data Type     | Time(ms)    | Comparisons  | Swaps\n";
+    cout << "  -----------------+---------+---------------+-------------+--------------+----------\n";
+
+    for (int i = 0; i < resultCount; i++) {
+        BenchResult& r = results[i];
+        cout << "  ";
+        cout.width(17); cout << left << r.algorithm;
+        cout << "| ";
+        cout.width(8);  cout << left << r.dataSize;
+        cout << "| ";
+        cout.width(15); cout << left << r.dataType;
+        cout << "| ";
+        if (r.timeMs < 0)
+            cout.width(12), cout << left << "SKIPPED";
+        else
+            cout.width(12), cout << left << r.timeMs;
+        cout << "| ";
+        if (r.comparisons < 0)
+            cout.width(13), cout << left << "SKIPPED";
+        else
+            cout.width(13), cout << left << r.comparisons;
+        cout << "| ";
+        if (r.swaps < 0)
+            cout << "SKIPPED";
+        else
+            cout << r.swaps;
+        cout << "\n";
+    }
+
+    cout << "==================================\n";
+    cout << "  Note: O(n2) algorithms skipped at n=100,000 (impractical).\n";
+}
+
+// ============================================================
+//  SECTION 7 — SORTING MENU
+// ============================================================
+
+void sortMenu() {
+    printHeader("SORT STUDENTS");
+    cout << "  1. Bubble Sort    — by GPA descending  (best for nearly sorted)\n";
+    cout << "  2. Insertion Sort — by ID ascending    (best for small/incremental)\n";
+    cout << "  3. Selection Sort — by Age ascending   (minimizes swaps)\n";
+    cout << "  4. Merge Sort     — by Name alphabetical (stable, guaranteed O(n log n))\n";
+    cout << "  5. Quick Sort     — by GPA descending  (fastest average for large data)\n";
+    cout << "  Choice: "; int ch; cin >> ch;
+
+    resetCounters();
+    auto start = high_resolution_clock::now();
+
+    if (ch == 1) { bubbleSortGPA(students, n);        cout << "  Sorted by GPA (Bubble Sort).\n"; }
+    else if (ch == 2) { insertionSortID(students, n);      cout << "  Sorted by ID (Insertion Sort).\n"; }
+    else if (ch == 3) { selectionSortAge(students, n);     cout << "  Sorted by Age (Selection Sort).\n"; }
+    else if (ch == 4) { mergeSortName(students, 0, n - 1); cout << "  Sorted by Name (Merge Sort).\n"; }
+    else if (ch == 5) { quickSortGPA(students, 0, n - 1);  cout << "  Sorted by GPA (Quick Sort).\n"; }
+
+    auto end = high_resolution_clock::now();
+    double ms = duration<double, milli>(end - start).count();
+
+    cout << "  Comparisons: " << g_comparisons
+        << "  |  Swaps: " << g_swaps
+        << "  |  Time: " << ms << " ms\n";
+}
+
+// ============================================================
+//  SECTION 8 — LOAD SAMPLE DATA
+// ============================================================
+
+void loadSampleData() {
+    printHeader("LOAD SAMPLE DATA");
+    cout << "  How many sample students to generate?\n";
+    cout << "  1. 50      (small)\n";
+    cout << "  2. 1,000   (medium)\n";
+    cout << "  3. 10,000  (large)\n";
+    cout << "  4. 100,000 (very large — for benchmarking)\n";
+    cout << "  Choice: "; int ch; cin >> ch;
+
+    int sizes[] = { 50, 1000, 10000, 100000 };
+    int sz = sizes[ch - 1];
+    if (sz > MAX) sz = MAX;
+
+    generateRandom(students, sz);
+    n = sz;
+
+    cout << "  [SUCCESS] Loaded " << n << " sample students.\n";
+}
+
+// ============================================================
+//  MAIN MENU
+// ============================================================
+
+void printMainMenu() {
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
+
+    cout << "\n";
+    cout << "\033[1m\033[36m";
+    cout << "\033[2m ==========================================\n\033[0m";
+    cout << "   STUDENT GRADE MANAGEMENT SYSTEM\n";
+    cout << "   Design & Analysis of Algorithms\n";
+    cout << "\033[2m ==========================================\n\033[0m";
+    cout << "\033[0m";
+
+    cout << "\033[2m   Students in memory: \033[0m\033[1m" << n << "\033[0m\n";
+    cout << "\033[2m ==========================================\n\033[0m";
+
+    cout << "\033[1m\033[33m   RECORDS\n\033[0m";
+    cout << "\033[32m    1  \033[0m" << "Add Student\n";
+    cout << "\033[32m    2  \033[0m" << "Delete Student\n";
+    cout << "\033[32m    3  \033[0m" << "Update Student\n";
+    cout << "\033[32m    4  \033[0m" << "Display All\n";
+
+    cout << "\033[2m ==========================================\n\033[0m";
+    cout << "\033[1m\033[33m   ALGORITHMS\n\033[0m";
+    cout << "\033[32m    5  \033[0m" << "Sort Students\n";
+    cout << "\033[32m    6  \033[0m" << "Search Students\n";
+
+    cout << "\033[2m ==========================================\n\033[0m";
+    cout << "\033[1m\033[33m   ANALYTICS\n\033[0m";
+    cout << "\033[32m    7  \033[0m" << "Top-K Ranking\n";
+    cout << "\033[32m    8  \033[0m" << "Statistics\n";
+    cout << "\033[32m    9  \033[0m" << "Filter by Major\n";
+    cout << "\033[32m   10  \033[0m" << "Detect Duplicate GPAs\n";
+
+    cout << "\033[2m ==========================================\n\033[0m";
+    cout << "\033[1m\033[33m   ADVANCED\n\033[0m";
+    cout << "\033[32m   11  \033[0m" << "AVL Tree Operations\n";
+    cout << "\033[32m   12  \033[0m" << "Run Full Benchmark\n";
+    cout << "\033[32m   13  \033[0m" << "Load Sample Data\n";
+
+    cout << "\033[2m ==========================================\n\033[0m";
+    cout << "\033[1m\033[31m    0  \033[0m\033[31mExit\033[0m\n";
+    cout << "\033[2m ==========================================\n\033[0m";
+
+    cout << "\n  \033[1m> \033[0m";
+}
+int main() {
+        int choice;
+        while (true) {
+            printMainMenu();
+            cin >> choice;
+            cin.ignore(1000, '\n');
+            switch (choice) {
+            case  1: addStudent();      pause(); break;
+            case  2: deleteStudent();   pause(); break;
+            case  3: updateStudent();   pause(); break;
+            case  4: displayStudents(); pause(); break;
+            case  5: sortMenu();        pause(); break;
+            case  6: searchMenu();      pause(); break;
+            case  7: topK();            pause(); break;
+            case  8: statistics();      pause(); break;
+            case  9: filterByMajor();   pause(); break;
+            case 10: detectDuplicates(); pause(); break;
+            case 11: avlMenu();          pause(); break;
+            case 12: runBenchmark();    pause(); break;
+            case 13: loadSampleData();  pause(); break;
+            case  0:
+                cout << "\n  Goodbye!\n\n";
+                return 0;
+            default:
+                cout << "Invalid choice. Try again.\n";
+                pause();
+            }
+    }
+}
