@@ -138,7 +138,7 @@ void printStudent(const Student& s) {
 }
 // ============================================================
 //  FORWARD DECLARATIONS
-//  (needed because benchmark calls sort functions defined below)
+//  (needed because benchmark calls sort functions below)
 // ============================================================
 
 void bubbleSortGPA(Student arr[], int size);
@@ -163,12 +163,10 @@ bool idExists(int id) {
     return false;
 }
 
-// ── Name validation: must contain only letters and spaces ──
 bool isValidName(const string& name) {
     if (name.empty()) return false;
     for (char c : name)
         if (!isalpha(c) && c != ' ') return false;
-    // must have at least one non-space char
     for (char c : name)
         if (c != ' ') return true;
     return false;
@@ -184,7 +182,6 @@ void addStudent() {
 
     Student s;
 
-    // ── 1. ID ──
     while (true) {
         cout << "  Enter ID (positive integer): ";
         if (cin >> s.id && s.id > 0) {
@@ -201,7 +198,6 @@ void addStudent() {
     }
     cin.ignore(1000, '\n');
 
-    // ── 2. Name (letters + spaces only) ──
     while (true) {
         cout << "  Enter Name  (letters only): ";
         getline(cin, s.name);
@@ -209,7 +205,6 @@ void addStudent() {
         cout << "\033[31m  [ERROR] Name must contain only letters and spaces (no digits/symbols).\033[0m\n";
     }
 
-    // ── 3. GPA ──
     while (true) {
         cout << "  Enter GPA   (0.0 - 4.0)  : ";
         if (cin >> s.gpa && s.gpa >= 0.0 && s.gpa <= 4.0) break;
@@ -218,7 +213,6 @@ void addStudent() {
         cin.ignore(1000, '\n');
     }
 
-    // ── 4. Age ──
     while (true) {
         cout << "  Enter Age   (16 - 100)   : ";
         if (cin >> s.age && s.age >= 16 && s.age <= 100) break;
@@ -226,8 +220,6 @@ void addStudent() {
         cin.clear();
         cin.ignore(1000, '\n');
     }
-
-    // ── 5. Major — numbered menu, no free-text ──
     s.major = chooseMajor();
 
     students[n++] = s;
@@ -240,9 +232,13 @@ void deleteStudent() {
     int id;
     while (true) {
         cout << "  Enter ID to delete: ";
-        if (cin >> id) { cin.ignore(1000, '\n'); break; }
-        cout << "\033[31m  [ERROR] Invalid input.\033[0m\n";
-        cin.clear(); cin.ignore(1000, '\n');
+        if (cin >> id) { cin.ignore(1000, '\n'); 
+           break; 
+        }
+        else {
+            cout << "\033[31m  [ERROR] Invalid input.\033[0m\n";
+            cin.clear(); cin.ignore(1000, '\n');
+        }
     }
 
     for (int i = 0; i < n; i++) {
@@ -319,18 +315,13 @@ void displayStudents() {
     for (int i = 0; i < n; i++) {
         const Student& s = students[i];
         cout << "\033[36m  |\033[0m ";
-        // ID
         cout.width(8); cout << left << s.id << "  | ";
-        // Name (truncate at 20)
         string nm = s.name.length() > 20 ? s.name.substr(0, 19) + "..." : s.name;
         cout.width(20); cout << left << nm << " | ";
-        // GPA coloured
         if (s.gpa >= 3.5)      cout << "\033[32m";
         else if (s.gpa < 2.0)  cout << "\033[31m";
         cout.width(4); cout << left << s.gpa << "\033[0m | ";
-        // Age
         cout.width(3); cout << left << s.age << " | ";
-        // Major (truncate at 26)
         string mj = s.major.length() > 26 ? s.major.substr(0, 25) + "..." : s.major;
         cout.width(26); cout << left << mj;
         cout << "\033[36m|\033[0m\n";
@@ -343,8 +334,8 @@ void displayStudents() {
 // ============================================================
 
 // ── 1. BUBBLE SORT ──────────────────────────────────────────
-// Complexity : Best O(n) | Average O(n²) | Worst O(n²)
-// Space      : O(1) in-place
+// Complexity : Best O(n) | Worst O(n²)
+// Space      : O(1) 
 // Stable     : Yes
 // Key feature: Early-exit optimisation — detects if the array
 //              became sorted before all passes complete.
@@ -361,13 +352,13 @@ void bubbleSortGPA(Student arr[], int size) {
                 swapped = true;
             }
         }
-        if (!swapped) break;          // ← O(n) early exit
+        if (!swapped) break;    
     }
 }
 
 // ── 2. INSERTION SORT ───────────────────────────────────────
-// Complexity : Best O(n) | Average O(n²) | Worst O(n²)
-// Space      : O(1) in-place
+// Complexity : Best O(n) | Worst O(n²)
+// Space      : O(1) 
 // Stable     : Yes
 // Key feature: Adaptive — each new element is inserted into
 //              its correct position among already-sorted items.
@@ -389,8 +380,8 @@ void insertionSortID(Student arr[], int size) {
 }
 
 // ── 3. SELECTION SORT ───────────────────────────────────────
-// Complexity : Best O(n²) | Average O(n²) | Worst O(n²)
-// Space      : O(1) in-place
+// Complexity : Best O(n²) | Worst O(n²)
+// Space      : O(1)
 // Stable     : No
 // Key feature: Performs exactly O(n) swaps regardless of input
 //              — fewest writes of all O(n²) algorithms.
@@ -409,9 +400,9 @@ void selectionSortAge(Student arr[], int size) {
 }
 
 // ── 4. MERGE SORT ───────────────────────────────────────────
-// Complexity : Best O(n log n) | Average O(n log n) | Worst O(n log n)
-// Space      : O(n) auxiliary arrays
-// Stable     : Yes — guarantees relative order of equal elements
+// Complexity : Best O(n log n) |  Worst O(n log n)
+// Space      : O(n) 
+// Stable     : Yes 
 // Key feature: Divide-and-conquer with guaranteed O(n log n)
 //              in ALL cases. The only O(n log n) stable sort here.
 // Best fit   : Large exports (100 000 records) where result
@@ -450,8 +441,8 @@ void mergeSortName(Student arr[], int left, int right) {
 }
 
 // ── 5. QUICK SORT ───────────────────────────────────────────
-// Complexity : Best O(n log n) | Average O(n log n) | Worst O(n²)
-// Space      : O(log n) call stack
+// Complexity : Best O(n log n) | Worst O(n²)
+// Space      : O(log n)
 // Stable     : No
 // Key feature: In-place — no extra memory. Uses median-of-three
 //              pivot to prevent O(n²) on sorted/reverse input.
@@ -497,7 +488,7 @@ void quickSortGPA(Student arr[], int low, int high) {
 //  SECTION 3 — SEARCHING ALGORITHMS
 // ============================================================
 
-// ── LINEAR SEARCH ── O(n), no precondition
+// LINEAR SEARCH 
 int linearSearchName(const string& name) {
     for (int i = 0; i < n; i++) {
         g_comparisons++;
@@ -506,7 +497,6 @@ int linearSearchName(const string& name) {
     return -1;
 }
 
-// Case-insensitive partial match for dashboard search
 int linearSearchPartial(const string& query) {
     string q = query;
     for (char& c : q) c = tolower(c);
@@ -518,7 +508,7 @@ int linearSearchPartial(const string& query) {
     return -1;
 }
 
-// ── BINARY SEARCH ── O(log n), array must be sorted by ID
+// BINARY SEARCH 
 int binarySearchID(Student arr[], int size, int id) {
     int left = 0, right = size - 1;
     while (left <= right) {
@@ -539,7 +529,7 @@ void searchMenu() {
     cout << "  \033[33m3\033[0m. Quick find      —  Partial name, case-insensitive\n";
     cout << "\n  Choice: ";
     int ch; cin >> ch;
-    cin.ignore(1000, '\n');       // ← FIX: one ignore after cin>>, not two
+    cin.ignore(1000, '\n');       
 
     if (ch == 1) {
         cout << "\n  Enter exact full name: ";
@@ -566,11 +556,10 @@ void searchMenu() {
         cout << "\n  Enter student ID: ";
         int id; cin >> id; cin.ignore(1000, '\n');
 
-        // Sort a temporary copy by ID — does not disturb main array
         Student* temp = new Student[n];
         copyArray(students, temp, n);
         resetCounters();
-        insertionSortID(temp, n);        // sort the copy
+        insertionSortID(temp, n);       
 
         resetCounters();
         auto t0 = high_resolution_clock::now();
@@ -712,7 +701,7 @@ void filterByMajor() {
     printHeader("FILTER BY MAJOR");
 
     cout << "  Select major to filter:\n";
-    string major = chooseMajor();    // ← FIX: uses numbered menu, no cin.ignore() issue
+    string major = chooseMajor();    
 
     int count = 0;
     for (int i = 0; i < n; i++) {
@@ -861,8 +850,8 @@ void generateRandom(Student arr[], int size) {
 
 void generateNearlySorted(Student arr[], int size) {
     generateRandom(arr, size);
-    quickSortGPA(arr, 0, size - 1);      // sort first
-    int disturb = size / 20;              // disturb ~5%
+    quickSortGPA(arr, 0, size - 1);
+    int disturb = size / 20;            
     for (int i = 0; i < disturb; i++) {
         int a = rand() % size, b = rand() % size;
         swapStudents(arr[a], arr[b]);
@@ -917,7 +906,6 @@ void runBenchmark() {
         for (int si = 0; si < numSizes; si++) {
             int sz = sizes[si];
 
-            // ── Allocate on heap to avoid stack overflow at 100k ──
             Student* base = new Student[sz];
             Student* arr = new Student[sz];
 
@@ -926,7 +914,6 @@ void runBenchmark() {
             else              generateReverseSorted(base, sz);
 
             for (int ai = 0; ai < 5; ai++) {
-                // Skip O(n²) at 100,000 — impractical
                 bool skip = (sz == 100000 && ai < 3);
 
                 copyArray(base, arr, sz);
@@ -955,7 +942,6 @@ void runBenchmark() {
                 r.comparisons = skip ? -1 : g_comparisons;
                 r.swaps = skip ? -1 : g_swaps;
 
-                // Progress indicator
                 cout << "    " << algNames[ai] << " [n=" << sz << "] ";
                 if (skip) cout << "\033[33mSKIPPED\033[0m\n";
                 else      cout << "\033[32m" << ms << " ms\033[0m\n";
@@ -966,7 +952,6 @@ void runBenchmark() {
         }
     }
 
-    // ── Print full results table ──
     cout << "\n\n";
     printSep();
     cout << "\033[1m  BENCHMARK RESULTS\033[0m\n";
@@ -1101,7 +1086,6 @@ void dashboard() {
     cout << "  |  Low GPA   : \033[31m" << minG << "\033[0m\n";
     cout << "  +---------------------------------------------+\n";
 
-    // ── Preview top 5 ──
     Student* temp = new Student[n];
     copyArray(students, temp, n);
     quickSortGPA(temp, 0, n - 1);
@@ -1114,7 +1098,6 @@ void dashboard() {
     }
     delete[] temp;
 
-    // ── Inline search ──
     cout << "\n  \033[1mQuick Search\033[0m  (partial name, case-insensitive)\n";
     cout << "  Enter query (or press Enter to skip): ";
     string query; getline(cin, query);
@@ -1215,7 +1198,7 @@ int main() {
         case 13: runBenchmark();     pause(); break;
         case 14: loadSampleData();   pause(); break;
         case  0:
-            cout << "\n\033[36m  Goodbye!\033[0m\n\n";
+            cout << "\n\033[36m  Made by us! hope you liked it!\033[0m\n\n";
             return 0;
         default:
             cout << "\033[31m  Invalid choice. Try again.\033[0m\n";
