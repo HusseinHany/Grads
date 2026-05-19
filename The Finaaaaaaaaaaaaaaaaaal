@@ -1170,7 +1170,7 @@ int main() {
         case  0:
             saveToFile();
             msgOK("Data saved to " + DATA_FILE);
-            cout << "\n\033[36m  Goodbye!\033[0m\n\n";
+            cout << "\n\033[36m  Designed by ACU Coders\n  under supervision of Eng.Sama\033[0m\n\n";
             return 0;
         default: msgERR("Invalid choice."); pause();
         }
