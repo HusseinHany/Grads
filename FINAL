@@ -1,21 +1,3 @@
-/*
-============================================================
-  STUDENT GRADE MANAGEMENT SYSTEM  v2
-  Design & Analysis of Algorithms — University Project
-
-  Fixes applied:
-   - Name validation: letters + spaces only
-   - Major: numbered menu, no free-text typos
-   - searchMenu: cin.ignore() fix (no double-press)
-   - filterByMajor: cin.ignore() fix
-   - Benchmark: forward declarations added, static array
-     conflicts removed, all 5 algorithms run correctly
-   - Sorting menu: full complexity + scenario descriptions
-   - Dashboard search bar added
-   - UI: colours, alignment, section headers polished
-============================================================
-*/
-
 #include <iostream>
 #include <string>
 #include <chrono>
