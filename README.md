@@ -2,7 +2,7 @@
 
 Working versions of a console student grade management system in C++, written for a Design and Analysis of Algorithms course.
 
-**The finished version lives in [Student-Managment-System](https://github.com/HusseinHany/Student-Managment-System).** This repository keeps the earlier drafts.
+**The finished version lives in [Student-Management-System](https://github.com/HusseinHany/Student-Management-System).** This repository keeps the earlier drafts.
 
 ## Files
 
@@ -10,7 +10,7 @@ Working versions of a console student grade management system in C++, written fo
 | --- | --- |
 | `StudentGradeSystem_draft1.cpp` | The first draft |
 | `StudentGradeSystem_final.cpp` | A complete, compilable version (962 lines) |
-| `StudentGradeSystem_v3.cpp` | The later version, almost identical to the one in Student-Managment-System |
+| `StudentGradeSystem_v3.cpp` | The later version, almost identical to the one in Student-Management-System |
 
 ## What the program does
 
