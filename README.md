@@ -8,10 +8,9 @@ Working versions of a console student grade management system in C++, written fo
 
 | File | What it is |
 | --- | --- |
+| `StudentGradeSystem_draft1.cpp` | The first draft |
 | `StudentGradeSystem_final.cpp` | A complete, compilable version (962 lines) |
-| `New Text Document.txt` | An earlier draft of the same program |
-| `The Finaaaaaaaaaaaaaaaaaal` | The later version, almost identical to the one in Student-Managment-System |
-| `FINAL` | Empty placeholder |
+| `StudentGradeSystem_v3.cpp` | The later version, almost identical to the one in Student-Managment-System |
 
 ## What the program does
 
