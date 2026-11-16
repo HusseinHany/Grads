@@ -20,6 +20,15 @@ using namespace chrono;
 //  CONSTANTS & GLOBALS
 // ============================================================
 
+// Leave cleanly when input is closed (Ctrl+D, or the end of a piped file)
+// instead of looping forever on a stream that can no longer be read.
+void quitIfInputClosed() {
+    if (cin.eof()) {
+        cout << "\n  Input closed. Exiting.\n";
+        exit(0);
+    }
+}
+
 const int MAX = 100000;
 
 long long g_comparisons = 0;
@@ -55,7 +64,7 @@ void swapStudents(Student& a, Student& b) {
 void pause() {
     cout << "\n\033[2m  Press Enter to continue...\033[0m";
     cin.ignore(1000, '\n');
-    cin.get();
+    cin.get(); quitIfInputClosed();
 }
 
 void copyArray(Student src[], Student dst[], int size) {
@@ -122,7 +131,7 @@ void addStudent() {
         }
         else {
             cout << "\033[31m  [ERROR] Invalid ID. Please enter a positive number.\033[0m\n";
-            cin.clear();
+            quitIfInputClosed(); cin.clear();
             cin.ignore(1000, '\n');
         }
     }
@@ -132,7 +141,7 @@ void addStudent() {
     // 2. Validate Name (Must not be empty)
     while (true) {
         cout << "Enter Name : ";
-        getline(cin, s.name);
+        getline(cin, s.name); quitIfInputClosed();
         if (!s.name.empty()) break;
         cout << "\033[31m  [ERROR] Name cannot be empty.\033[0m\n";
     }
@@ -145,7 +154,7 @@ void addStudent() {
         }
         else {
             cout << "\033[31m  [ERROR] Invalid GPA (0.0 - 4.0). Re-enter: \033[0m";
-            cin.clear();
+            quitIfInputClosed(); cin.clear();
             cin.ignore(1000, '\n');
         }
     }
@@ -158,7 +167,7 @@ void addStudent() {
         }
         else {
             cout << "\033[31m  [ERROR] Invalid Age (16 - 100). Re-enter: \033[0m";
-            cin.clear();
+            quitIfInputClosed(); cin.clear();
             cin.ignore(1000, '\n');
         }
     }
@@ -168,7 +177,7 @@ void addStudent() {
     // 5. Validate Major
     while (true) {
         cout << "Enter Major : ";
-        getline(cin, s.major);
+        getline(cin, s.major); quitIfInputClosed();
         if (!s.major.empty()) break;
         cout << "\033[31m  [ERROR] Major cannot be empty.\033[0m\n";
     }
@@ -425,7 +434,7 @@ void searchMenu() {
 
     if (ch == 1) {
         string name;
-        cout << " Enter full name: "; getline(cin, name);
+        cout << " Enter full name: "; getline(cin, name); quitIfInputClosed();
         resetCounters();
         auto start = high_resolution_clock::now();
         int idx = linearSearchName(name);
@@ -561,7 +570,7 @@ void filterByMajor() {
 
     cin.ignore();
     string major;
-    cout << "  Enter major name: "; getline(cin, major);
+    cout << "  Enter major name: "; getline(cin, major); quitIfInputClosed();
 
     int count = 0;
     for (int i = 0; i < n; i++) {
@@ -762,7 +771,7 @@ void runBenchmark() {
     cout << "  across 3 data types x 4 dataset sizes.\n";
     cout << "  Total runs: 60\n\n";
     cout << "  Press ENTER to start...\n";
-    cin.ignore(); cin.get();
+    cin.ignore(); cin.get(); quitIfInputClosed();
 
     int sizes[] = { 50, 1000, 10000, 100000 };
     int numSizes = 4;
@@ -969,7 +978,7 @@ int main() {
         while (true) {
             printMainMenu();
             cin >> choice;
-            cin.ignore(1000, '\n');
+            quitIfInputClosed(); cin.ignore(1000, '\n');
             switch (choice) {
             case  1: addStudent();      pause(); break;
             case  2: deleteStudent();   pause(); break;

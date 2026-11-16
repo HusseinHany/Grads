@@ -10,6 +10,15 @@
 using namespace std;
 using namespace chrono;
 
+// Leave cleanly when input is closed (Ctrl+D, or the end of a piped file)
+// instead of looping forever on a stream that can no longer be read.
+void quitIfInputClosed() {
+    if (cin.eof()) {
+        cout << "\n  Input closed. Exiting.\n";
+        exit(0);
+    }
+}
+
 const int MAX = 100000;
 
 long long g_comparisons = 0;
@@ -72,7 +81,7 @@ void clrscr() {
 
 void pause() {
     cout << "\n  Press Enter to continue...";
-    cin.get();
+    cin.get(); quitIfInputClosed();
 }
 
 void divider(char c = '-', int w = 50) {
@@ -179,7 +188,7 @@ string chooseMajor() {
             return MAJORS[ch - 1];
         }
         cout << "\033[31m  Bad input. Try again: \033[0m";
-        cin.clear(); cin.ignore(1000, '\n');
+        quitIfInputClosed(); cin.clear(); cin.ignore(1000, '\n');
     }
 }
 
@@ -196,7 +205,7 @@ void addStudent() {
             cout << "\033[31m  ID already exists.\033[0m\n";
         } else {
             cout << "\033[31m  Must be a positive number.\033[0m\n";
-            cin.clear();
+            quitIfInputClosed(); cin.clear();
         }
         cin.ignore(1000, '\n');
     }
@@ -204,7 +213,7 @@ void addStudent() {
 
     while (true) {
         cout << "  Name : ";
-        getline(cin, s.name);
+        getline(cin, s.name); quitIfInputClosed();
         if (validName(s.name)) break;
         cout << "\033[31m  Letters and spaces only.\033[0m\n";
     }
@@ -213,14 +222,14 @@ void addStudent() {
         cout << "  GPA  : ";
         if (cin >> s.gpa && s.gpa >= 0.0 && s.gpa <= 4.0) break;
         cout << "\033[31m  Enter 0.0 to 4.0.\033[0m\n";
-        cin.clear(); cin.ignore(1000, '\n');
+        quitIfInputClosed(); cin.clear(); cin.ignore(1000, '\n');
     }
 
     while (true) {
         cout << "  Age  : ";
         if (cin >> s.age && s.age >= 16 && s.age <= 100) break;
         cout << "\033[31m  Enter 16 to 100.\033[0m\n";
-        cin.clear(); cin.ignore(1000, '\n');
+        quitIfInputClosed(); cin.clear(); cin.ignore(1000, '\n');
     }
 
     s.major = chooseMajor();
@@ -236,7 +245,7 @@ void deleteStudent() {
     header("DELETE STUDENT");
     int id;
     cout << "  Enter ID: ";
-    while (!(cin >> id)) { cout << "\033[31m  Bad input: \033[0m"; cin.clear(); cin.ignore(1000,'\n'); }
+    while (!(cin >> id)) { cout << "\033[31m  Bad input: \033[0m"; quitIfInputClosed(); cin.clear(); cin.ignore(1000,'\n'); }
     cin.ignore(1000, '\n');
 
     for (int i = 0; i < n; i++) {
@@ -258,7 +267,7 @@ void updateStudent() {
     header("UPDATE STUDENT");
     int id;
     cout << "  Enter ID: ";
-    while (!(cin >> id)) { cout << "\033[31m  Bad input: \033[0m"; cin.clear(); cin.ignore(1000,'\n'); }
+    while (!(cin >> id)) { cout << "\033[31m  Bad input: \033[0m"; quitIfInputClosed(); cin.clear(); cin.ignore(1000,'\n'); }
     cin.ignore(1000, '\n');
 
     for (int i = 0; i < n; i++) {
@@ -272,7 +281,7 @@ void updateStudent() {
             cout << "  \033[33m2\033[0m. Update Major\n";
             cout << "  \033[33m3\033[0m. Update Both\n";
             cout << "  Choice: ";
-            int ch; cin >> ch; cin.ignore(1000, '\n');
+            int ch; cin >> ch; quitIfInputClosed(); cin.ignore(1000, '\n');
 
             if (ch == 1 || ch == 3) {
                 while (true) {
@@ -280,7 +289,7 @@ void updateStudent() {
                     if (cin >> students[i].gpa && students[i].gpa >= 0.0 && students[i].gpa <= 4.0)
                     { cin.ignore(1000,'\n'); break; }
                     cout << "\033[31m  Must be 0.0-4.0.\033[0m\n";
-                    cin.clear(); cin.ignore(1000,'\n');
+                    quitIfInputClosed(); cin.clear(); cin.ignore(1000,'\n');
                 }
             }
             if (ch == 2 || ch == 3) students[i].major = chooseMajor();
@@ -399,10 +408,10 @@ void searchMenu() {
     cout << "  \033[33m2\033[0m. By ID           -- Binary Search   O(log n)\n";
     cout << "  \033[33m3\033[0m. Partial name    -- Case-insensitive scan\n";
     cout << "\n  Choice: ";
-    int ch; cin >> ch; cin.ignore(1000,'\n');
+    int ch; cin >> ch; quitIfInputClosed(); cin.ignore(1000,'\n');
 
     if (ch == 1) {
-        cout << "  Name: "; string name; getline(cin, name);
+        cout << "  Name: "; string name; getline(cin, name); quitIfInputClosed();
         resetCounters();
         auto t0 = high_resolution_clock::now();
         int idx = linearSearchName(name);
@@ -414,7 +423,7 @@ void searchMenu() {
         cout << "  Comparisons: " << g_comparisons << "   Time: " << ms << " ms\n";
 
     } else if (ch == 2) {
-        cout << "  ID: "; int id; cin >> id; cin.ignore(1000,'\n');
+        cout << "  ID: "; int id; cin >> id; quitIfInputClosed(); cin.ignore(1000,'\n');
         Student* tmp = new Student[n];
         copyArray(students, tmp, n);
         resetCounters(); insertionSortID(tmp, n);
@@ -433,7 +442,7 @@ void searchMenu() {
         delete[] tmp;
 
     } else if (ch == 3) {
-        cout << "  Partial name: "; string q; getline(cin, q);
+        cout << "  Partial name: "; string q; getline(cin, q); quitIfInputClosed();
         resetCounters();
         auto t0 = high_resolution_clock::now();
         int idx = linearSearchPartial(q);
@@ -494,7 +503,7 @@ void statistics() {
 void topK() {
     header("TOP-K RANKING");
     if(n==0){cout<<"  No records.\n";return;}
-    int k; cout<<"  Enter K: "; cin>>k; cin.ignore(1000,'\n');
+    int k; cout<<"  Enter K: "; cin>>k; quitIfInputClosed(); cin.ignore(1000,'\n');
     if(k<=0||k>n){cout<<"\033[31m  Invalid K.\033[0m\n";return;}
 
     Student* tmp=new Student[n]; copyArray(students,tmp,n);
@@ -589,13 +598,13 @@ void avlMenu(){
     cout<<"  \033[33m1\033[0m. Insert all students\n";
     cout<<"  \033[33m2\033[0m. Search by ID  [O(log n)]\n";
     cout<<"  \033[33m3\033[0m. Inorder display (sorted by ID)\n";
-    cout<<"\n  Choice: "; int ch; cin>>ch; cin.ignore(1000,'\n');
+    cout<<"\n  Choice: "; int ch; cin>>ch; quitIfInputClosed(); cin.ignore(1000,'\n');
     if(ch==1){
         avlRoot=NULL;
         for(int i=0;i<n;i++) avlRoot=avlIns(avlRoot,students[i]);
         cout<<"\033[32m  Inserted "<<n<<" students.\033[0m\n";
     } else if(ch==2){
-        cout<<"  ID: "; int id; cin>>id; cin.ignore(1000,'\n');
+        cout<<"  ID: "; int id; cin>>id; quitIfInputClosed(); cin.ignore(1000,'\n');
         resetCounters();
         AVLNode* r=avlSrch(avlRoot,id);
         if(r){cout<<"\033[32m  FOUND:\033[0m\n";tableHeader();printStudentRow(r->data);tableFooter();}
@@ -640,7 +649,7 @@ void sortMenu(){
     cout<<"  \033[33m4\033[0m | Merge Sort     | Name asc | O(n log n) guaranteed  | Large, stable sort\n";
     cout<<"  \033[33m5\033[0m | Quick Sort     | GPA desc | O(n log n) avg         | Large, fastest avg\n";
     divider('-', 78);
-    cout<<"\n  Choice: "; int ch; cin>>ch; cin.ignore(1000,'\n');
+    cout<<"\n  Choice: "; int ch; cin>>ch; quitIfInputClosed(); cin.ignore(1000,'\n');
     if(ch<1||ch>5){cout<<"\033[31m  Invalid.\033[0m\n";return;}
 
     const string desc[]={"Bubble Sort -- GPA desc","Insertion Sort -- ID asc",
@@ -670,7 +679,7 @@ void loadSampleData(){
     cout<<"  \033[33m2\033[0m.  1,000 records  (medium)\n";
     cout<<"  \033[33m3\033[0m. 10,000 records  (large)\n";
     cout<<"  \033[33m4\033[0m. 100,000 records (benchmark)\n";
-    cout<<"\n  Choice: "; int ch; cin>>ch; cin.ignore(1000,'\n');
+    cout<<"\n  Choice: "; int ch; cin>>ch; quitIfInputClosed(); cin.ignore(1000,'\n');
     const int sz[]={50,1000,10000,100000};
     if(ch<1||ch>4){cout<<"\033[31m  Invalid.\033[0m\n";return;}
     generateRandom(students,sz[ch-1]); n=sz[ch-1];
@@ -687,7 +696,7 @@ void runBenchmark(){
     cout<<"  Sizes: 50 | 1,000 | 10,000 | 100,000\n";
     cout<<"  Types: Random | Nearly Sorted | Reverse Sorted\n\n";
     cout<<"  NOTE: O(n^2) algorithms skipped at n=100,000\n\n";
-    cout<<"  Press Enter to start..."; cin.get();
+    cout<<"  Press Enter to start..."; cin.get(); quitIfInputClosed();
 
     const int sz[]={50,1000,10000,100000};
     const string dt[]={"Random","Nearly Sorted","Reverse Sorted"};
@@ -829,13 +838,13 @@ void dashboard(){
         cout<<"  Action: ";
 
         string act; cin>>act;
-        cin.ignore(1000,'\n');
+        quitIfInputClosed(); cin.ignore(1000,'\n');
         char a=(char)toupper((unsigned char)act[0]);
 
         if(a=='X') break;
 
         else if(a=='S'){
-            cout<<"  Partial name: "; string q; getline(cin,q);
+            cout<<"  Partial name: "; string q; getline(cin,q); quitIfInputClosed();
             if(q.empty()){cout<<"\033[31m  Empty query.\033[0m\n";}
             else{
                 resetCounters();
@@ -853,7 +862,7 @@ void dashboard(){
 
         else if(a=='T'){
             if(n==0){cout<<"\033[31m  No records.\033[0m\n";pause();continue;}
-            int k; cout<<"  Enter K: "; cin>>k; cin.ignore(1000,'\n');
+            int k; cout<<"  Enter K: "; cin>>k; quitIfInputClosed(); cin.ignore(1000,'\n');
             if(k<=0||k>n){cout<<"\033[31m  Invalid K.\033[0m\n";pause();continue;}
             Student* t2=new Student[n]; copyArray(students,t2,n);
             quickSortGPA(t2,0,n-1);
@@ -938,7 +947,7 @@ int main(){
     int choice;
     while(true){
         printMainMenu();
-        if(!(cin>>choice)){cin.clear();cin.ignore(1000,'\n');continue;}
+        if(!(cin>>choice)){quitIfInputClosed(); cin.clear();cin.ignore(1000,'\n');continue;}
         cin.ignore(1000,'\n');
         switch(choice){
             case  1: dashboard();        break;

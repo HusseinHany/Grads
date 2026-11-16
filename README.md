@@ -4,7 +4,7 @@ Working versions of a console student grade management system in C++, written fo
 
 **The finished version lives in [Student-Management-System](https://github.com/HusseinHany/Student-Management-System).** This repository keeps the earlier drafts.
 
-These drafts are kept as they were written. Fixes made later (clean exit when input ends, the fairer benchmark, the aligned statistics box) are only in the finished version.
+All three drafts exit cleanly when input ends, and v3 has the aligned statistics box. The fairer benchmark is only in the finished version.
 
 ## Files
 
