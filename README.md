@@ -1,5 +1,9 @@
 # Grads
 
+<p align="center">
+  <a href="https://github.com/HusseinHany/Student-Management-System"><img src="docs/banner.svg" width="100%" alt="Student Management System: comparisons at 10,000 records for five sorting algorithms."></a>
+</p>
+
 Working versions of a console student grade management system in C++, written for a Design and Analysis of Algorithms course.
 
 **The finished version lives in [Student-Management-System](https://github.com/HusseinHany/Student-Management-System).** This repository keeps the earlier drafts.
